@@ -2,79 +2,57 @@
 
 #define __KNN_IMPLEMENTATION__
 #include "knn.h"
-
-typedef struct {
-    Matrix a0;
-    Matrix w1, b1, a1;
-    Matrix w2, b2, a2;
-} Xor;
-
 float data[] = {
-    0,0,1,
-    0,1,0,
+    0,0,0,
+    0,1,1,
     1,0,1,
     1,1,0
 };
 
-
-float forward(Xor m, float x1, float x2) {
-    MATRIX_AT(m.a0, 0, 0) = x1;
-    MATRIX_AT(m.a0, 0, 1) = x2;
-
-    mat_dot(m.a1, m.a0, m.w1);
-    mat_add (m.a1, m.b1);
-    mat_sig(m.a1);
-    mat_dot(m.a2, m.a1, m.w2);
-    mat_add(m.a2, m.b2);
-    mat_sig(m.a2);
-    return *m.a2.p;
-}
-
-float cost(Xor m, Matrix mi, Matrix mo) {
-    assert(mi.rows == mo.rows);
-    for(size_t i = 0; i < mi.rows; i++) {
-        mat_copy(m.a0, mat_row(mi, i));
+void verify(KNN n) {
+    for(size_t i = 0; i < 2; i+= 1) {
+        for(size_t j = 0; j < 2; j += 1) {
+            MATRIX_AT(KNN_INPUT(n), 0, 0) = i; 
+            MATRIX_AT(KNN_INPUT(n), 0, 1) = j;
+            knn_forward(n);
+            float y = MATRIX_AT(KNN_OUTPUT(n), 0, 0);
+            
+            printf("%zu ^ %zu = %f\n", i, j, y);
+        }
     }
-
 }
 
 int main(){
     srand(time(0));
-    // float x1 = float_rand();
-    // float x2 = float_rand();
+
+    size_t arch[] = {2, 2, 1};
+    KNN n = knn_alloc(arch, ARR_LEN(arch));
+    KNN g = knn_alloc(arch, ARR_LEN(arch));
+    knn_rand(n);
+    
     size_t rows = sizeof(data)/sizeof(data[0])/3;
-    printf("rows = %f\n", rows);
-    Matrix mi = {
-      .rows = rows,
-      .cols = 2,
-      .stride = 3,
-      .p = data,
-    };
-    Matrix mo = {
+    Matrix ti = {
         .rows = rows,
-      .cols = 1,
-      .stride = 3,
-      .p = data + 2,
+        .cols = 2,
+        .stride = 3,
+        .p = data,
     };
-    mat_print(mi);
-    mat_print(mo);
-    // Xor m;
-    // m.a0 = malloc_matrix(1,2);
-    // m.w1 = malloc_matrix(2,2);
-    // m.b1 = malloc_matrix(1,2);
-    // m.a1 = malloc_matrix(1,2);
-    // m.w2 = malloc_matrix(2,1);
-    // m.b2 = malloc_matrix(1,1);
-    // m.a2 = malloc_matrix(1,1);
+    Matrix to = {
+        .rows = rows,
+        .cols = 1,
+        .stride = 3,
+        .p = data + 2,
+    };
+    
+    // float eps = 1e-1;
+    float rate = 1e-1;
+    for(size_t i = 0; i < 100*1000; i += 1) {
+        // knn_finite_diff(n, g, eps, ti, to);
+        knn_backprop(n, g, ti, to);
+        knn_learn(n, g, rate);
+    }
 
-    // rand_matrix(m.w1);
-    // rand_matrix(m.w2);
-    // rand_matrix(m.b1);
-    // rand_matrix(m.b2);
-
-    // float result = forward(m, x1, x2);
-
-    // printf("%f", result);
-
+    KNN_PRINT(n);
+    verify(n);
     return 0;
 }
