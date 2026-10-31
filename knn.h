@@ -24,7 +24,7 @@ typedef struct {
 #define MATRIX_AT(m, i, j) (m).p[(i)*(m).stride + (j)]
 
 Matrix malloc_matrix(size_t r, size_t c);
-void rand_matrix(Matrix m);
+void rand_matrix(Matrix m, int low, int high);
 void mat_fill(Matrix m, float v);
 void mat_dot(Matrix dst, Matrix a, Matrix b);
 void mat_add(Matrix dst, Matrix a);
@@ -47,7 +47,7 @@ typedef struct {
 
 KNN knn_alloc(size_t *arch, size_t total_count);
 void knn_print(KNN n, char* name);
-void knn_rand(KNN n);
+void knn_rand(KNN n, int low, int high);
 void knn_forward(KNN n);
 float knn_cost(KNN n, Matrix ti, Matrix to);
 void knn_finite_diff(KNN n, KNN g, float eps, Matrix ti, Matrix to);
@@ -111,10 +111,10 @@ Matrix malloc_matrix(size_t r, size_t c) {
     return m;
 }
 
-void rand_matrix(Matrix m) {
+void rand_matrix(Matrix m, int low, int high) {
     for(size_t i = 0; i < m.rows; i++) {
         for(size_t j = 0; j < m.cols; j++) {
-            MATRIX_AT(m, i, j) = float_rand();
+            MATRIX_AT(m, i, j) = float_rand() * (high - low) + low;
         }
     }
 }
@@ -189,10 +189,10 @@ void knn_print(KNN n, char* name) {
     printf("]\n");
 }
 
-void knn_rand(KNN n) {
+void knn_rand(KNN n, int low, int high) {
     for(size_t i = 0; i < n.count; i += 1) {
-        rand_matrix(n.weights[i]);
-        rand_matrix(n.biases[i]);
+        rand_matrix(n.weights[i], low, high);
+        rand_matrix(n.biases[i], low, high);
     }
 }
 void knn_forward(KNN n) {
